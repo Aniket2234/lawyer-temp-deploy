@@ -1,4 +1,5 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
+import { knowledgeArticles } from "./knowledgeData";
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   // Handle CORS for production
@@ -39,19 +40,31 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     }
     
     if (path.startsWith("/knowledge") && method === "GET") {
-      // Knowledge base articles
+      // Check if specific article ID is requested
+      const pathParts = path.split('/');
+      if (pathParts.length > 2 && pathParts[2]) {
+        const articleId = parseInt(pathParts[2]);
+        const article = knowledgeArticles.find(a => a.id === articleId);
+        if (article) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(article),
+          };
+        } else {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: "Article not found" }),
+          };
+        }
+      }
+      
+      // Return all knowledge base articles
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify([
-          {
-            id: 1,
-            title: "Understanding Indian Contract Law",
-            content: "Contract law in India is governed by the Indian Contract Act, 1872...",
-            category: "Contract Law",
-            tags: ["contracts", "indian law", "legal basics"]
-          }
-        ]),
+        body: JSON.stringify(knowledgeArticles),
       };
     }
     
