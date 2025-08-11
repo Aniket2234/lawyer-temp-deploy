@@ -25,7 +25,7 @@ Your project is already configured for Netlify deployment with:
 4. Select your repository
 5. Netlify will automatically detect the settings from `netlify.toml`:
    - Build command: `npm run build`
-   - Publish directory: `dist`
+   - Publish directory: `dist/public`
    - Functions directory: `netlify/functions`
 
 ### 4. Environment Variables (Optional)

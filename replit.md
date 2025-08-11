@@ -52,8 +52,9 @@ A comprehensive AI-powered legal assistant platform that provides instant legal 
 - Error handling and validation at all levels
 
 ## Recent Changes (Migration from Replit Agent)
-- **Date**: August 6, 2025
+- **Date**: August 11, 2025
 - **Migration Status**: Successfully completed migration to Replit environment
+- **Deployment Issue Fixed**: Resolved Netlify "Page not found" error by updating publish directory to `dist/public`
 - **Migrated**: Project structure to follow Replit fullstack patterns
 - **Updated**: Routing from manual state management to Wouter
 - **Added**: Type-safe API layer with proper validation
