@@ -1,0 +1,6 @@
+# Netlify redirects file for SPA routing
+# Handle client-side routing by redirecting all routes to index.html
+/*    /index.html   200
+
+# API routes should be handled by serverless functions
+/api/*  /.netlify/functions/api  200
