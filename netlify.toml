@@ -6,6 +6,16 @@
   NODE_VERSION = "20"
 
 [[redirects]]
+  from = "/api/knowledge"
+  to = "/.netlify/functions/knowledge"
+  status = 200
+
+[[redirects]]
+  from = "/api/knowledge/:id"
+  to = "/.netlify/functions/knowledge?id=:id"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

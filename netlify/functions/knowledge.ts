@@ -1,0 +1,483 @@
+import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
+
+// Import the knowledge base data directly
+const knowledgeArticles = [
+  // Arrest Rights - 10 articles
+  {
+    id: 1,
+    title: "Your Rights Under Article 20 During Police Arrest",
+    content: "Under the Indian Constitution Article 20, you have fundamental rights during arrest including protection against self-incrimination, double jeopardy, and ex-post-facto laws. No person can be compelled to be a witness against himself. You have the right to remain silent and cannot be forced to confess. The police must inform you of the grounds of arrest under Article 22.",
+    category: "Arrest Rights",
+    tags: ["arrest", "article 20", "article 22", "constitutional rights", "fundamental rights"],
+    isPublished: true,
+  },
+  {
+    id: 2,
+    title: "Police Custody Rights Under CrPC Section 50",
+    content: "Section 50 of Code of Criminal Procedure mandates that when police arrest someone without warrant, they must inform the person of grounds for arrest and their right to bail. The arrested person has right to consult and be defended by a legal practitioner of their choice. Police must produce the arrested person before magistrate within 24 hours.",
+    category: "Arrest Rights",
+    tags: ["police custody", "CrPC section 50", "bail rights", "legal representation"],
+    isPublished: true,
+  },
+  {
+    id: 3,
+    title: "Anticipatory Bail Under Section 438 CrPC",
+    content: "Section 438 of CrPC provides for anticipatory bail - a pre-arrest legal protection. High Court or Session Court can grant anticipatory bail if there's reasonable apprehension of arrest in non-bailable offense. The court considers factors like nature of accusation, criminal history, and likelihood of fleeing justice before granting anticipatory bail.",
+    category: "Arrest Rights",
+    tags: ["anticipatory bail", "section 438", "pre-arrest protection", "high court"],
+    isPublished: true,
+  },
+  {
+    id: 4,
+    title: "Rights During Police Interrogation",
+    content: "During police interrogation, you have right to legal counsel under Article 22(1). Police cannot use third-degree torture or physical violence. Any confession made to police is inadmissible under Evidence Act Section 25. You can request presence of family member or lawyer during questioning. If you're a woman, interrogation must be conducted by female police officer.",
+    category: "Arrest Rights",
+    tags: ["interrogation", "legal counsel", "evidence act", "women's rights"],
+    isPublished: true,
+  },
+  {
+    id: 5,
+    title: "Juvenile Justice Act - Rights of Minors",
+    content: "Under Juvenile Justice Act 2015, children below 18 years have special protection. Police cannot arrest minor without reasonable grounds. Parents/guardians must be informed immediately. Child must be produced before Juvenile Justice Board within 24 hours. No handcuffs can be used on children, and they cannot be kept in police lock-up with adult offenders.",
+    category: "Arrest Rights",
+    tags: ["juvenile justice", "minor rights", "children protection", "JJB"],
+    isPublished: true,
+  },
+  {
+    id: 6,
+    title: "Bail Rights Under Section 436-450 CrPC",
+    content: "Bail is fundamental right under Article 21. For bailable offenses, bail is matter of right. For non-bailable offenses, it's at court's discretion. Under Section 436A, if undertrial prisoner has served half of maximum sentence, they must be released on personal bond. Bail cannot be denied merely because accused is poor or cannot afford surety.",
+    category: "Arrest Rights",
+    tags: ["bail", "article 21", "undertrial", "personal bond"],
+    isPublished: true,
+  },
+  {
+    id: 7,
+    title: "False FIR and Malicious Prosecution Laws",
+    content: "Filing false FIR is offense under IPC Section 182 (false information with intent to cause public servant to use lawful power) and Section 211 (false charge of offense). Victim of malicious prosecution can claim compensation under tort law. Supreme Court guidelines in Arnesh Kumar case provide protection against automatic arrest in cases with less than 7 years imprisonment.",
+    category: "Arrest Rights",
+    tags: ["false FIR", "malicious prosecution", "IPC 182", "compensation"],
+    isPublished: true,
+  },
+  {
+    id: 8,
+    title: "POCSO Act - Protection of Children",
+    content: "Protection of Children from Sexual Offenses Act 2012 provides special procedures for child victims. Child-friendly court environment must be ensured. Recording of statement should be done by woman police officer not below rank of sub-inspector. Support person can accompany child during recording. In-camera proceedings protect child's identity.",
+    category: "Arrest Rights",
+    tags: ["POCSO", "child protection", "sexual offenses", "in-camera proceedings"],
+    isPublished: true,
+  },
+  {
+    id: 9,
+    title: "Custodial Violence and Torture Prevention",
+    content: "Custodial violence violates Article 21 and amounts to torture. DK Basu guidelines mandate arrest memo, medical examination, and right to inform relative/friend. NHRC monitors custodial deaths. Victim's family can file compensation claim. Police officers involved in custodial violence can face departmental action and criminal prosecution under IPC Section 330-348.",
+    category: "Arrest Rights",
+    tags: ["custodial violence", "DK Basu", "NHRC", "compensation"],
+    isPublished: true,
+  },
+  {
+    id: 10,
+    title: "SC/ST Atrocities Act - Special Protection",
+    content: "SC/ST (Prevention of Atrocities) Act 1989 provides special protection to Scheduled Castes and Scheduled Tribes. Anticipatory bail generally not available for offenses under this Act. Special courts established for speedy trial. Victim compensation scheme provides immediate relief. Investigation must be completed within 60 days.",
+    category: "Arrest Rights",
+    tags: ["SC/ST act", "atrocities", "special courts", "victim compensation"],
+    isPublished: true,
+  },
+
+  // Tenant Rights - 10 articles
+  {
+    id: 11,
+    title: "Rent Control Laws in India - Overview",
+    content: "Rent control in India is governed by state-specific laws like Delhi Rent Control Act 1958, Maharashtra Rent Control Act 1999. These laws protect tenants from arbitrary eviction and excessive rent increase. Model Tenancy Act 2019 aims to balance landlord-tenant rights. Rent tribunals provide dispute resolution mechanism outside regular courts.",
+    category: "Tenant Rights",
+    tags: ["rent control", "model tenancy act", "rent tribunal", "eviction protection"],
+    isPublished: true,
+  },
+  {
+    id: 12,
+    title: "Security Deposit Rules Under Model Tenancy Act",
+    content: "Model Tenancy Act 2019 limits security deposit to 2 months rent for residential and 6 months for commercial properties. Landlord must return security deposit within 1 month of tenancy termination after adjusting dues. Interest on security deposit must be paid as per agreement. Unjustified retention can lead to penalty equal to twice the deposit amount.",
+    category: "Tenant Rights",
+    tags: ["security deposit", "model tenancy act", "interest", "penalty"],
+    isPublished: true,
+  },
+  {
+    id: 13,
+    title: "Eviction Grounds Under State Rent Laws",
+    content: "Landlord can evict tenant only on specific grounds: non-payment of rent, subletting without consent, damage to property, personal necessity, or reconstruction. Notice period varies by state (usually 15 days to 1 month). Tenant can contest eviction in rent controller court. Eviction without due process is illegal and punishable.",
+    category: "Tenant Rights",
+    tags: ["eviction", "notice period", "rent controller", "legal grounds"],
+    isPublished: true,
+  },
+  {
+    id: 14,
+    title: "Rent Increase and Fair Rent Determination",
+    content: "Rent increase is regulated under state rent control laws. Standard rent is fixed based on factors like construction cost, situation of building, and amenities. Annual rent increase usually capped at 10-15%. Rent controller can determine fair rent on application. Tenant can challenge excessive rent increase in appropriate forum.",
+    category: "Tenant Rights",
+    tags: ["rent increase", "fair rent", "standard rent", "rent controller"],
+    isPublished: true,
+  },
+  {
+    id: 15,
+    title: "Maintenance and Repair Obligations",
+    content: "Under Transfer of Property Act Section 108, landlord must keep property in habitable condition and carry out structural repairs. Tenant responsible for day-to-day maintenance. If landlord fails to maintain, tenant can undertake repairs and deduct cost from rent after proper notice. Essential services like water, electricity must be ensured by landlord.",
+    category: "Tenant Rights",
+    tags: ["maintenance", "repairs", "transfer of property act", "habitable condition"],
+    isPublished: true,
+  },
+  {
+    id: 16,
+    title: "Subletting and Assignment Rights",
+    content: "Subletting without landlord's consent is ground for eviction under most rent control laws. However, sharing accommodation with family members generally not considered subletting. Assignment of tenancy usually requires written consent. Tenant can seek permission for subletting if lease agreement allows or law permits.",
+    category: "Tenant Rights",
+    tags: ["subletting", "assignment", "consent", "family members"],
+    isPublished: true,
+  },
+  {
+    id: 17,
+    title: "Consumer Protection for Tenants",
+    content: "Tenants can file complaints under Consumer Protection Act 2019 against builders/landlords for deficient services. Deficiencies like lack of promised amenities, structural defects qualify as unfair trade practices. Consumer forums provide quick and cost-effective remedy. Compensation for mental agony and litigation costs can be claimed.",
+    category: "Tenant Rights",
+    tags: ["consumer protection", "deficient services", "unfair trade practices", "compensation"],
+    isPublished: true,
+  },
+  {
+    id: 18,
+    title: "Women Tenant Special Rights",
+    content: "Women tenants have additional protection under various laws. Dowry Prohibition Act protects married women from being evicted for dowry demands. Domestic Violence Act provides right to shared household. Working women hostels have special rental regulations. Women cannot be evicted during night hours without proper legal process.",
+    category: "Tenant Rights",
+    tags: ["women tenants", "domestic violence act", "shared household", "special protection"],
+    isPublished: true,
+  },
+  {
+    id: 19,
+    title: "Commercial Tenancy Rights",
+    content: "Commercial tenants have different rights under state shop and establishment laws. License vs lease distinction important for commercial premises. Goodwill compensation may be payable on eviction in some states. Commercial rent control laws less stringent than residential. Business continuity rights protected under specific circumstances.",
+    category: "Tenant Rights",
+    tags: ["commercial tenancy", "license vs lease", "goodwill", "business continuity"],
+    isPublished: true,
+  },
+  {
+    id: 20,
+    title: "Legal Remedies for Tenant Harassment",
+    content: "Tenant harassment by landlord constitutes criminal intimidation under IPC Section 503-506. Unlawful disconnection of utilities is punishable offense. Tenant can file police complaint and seek injunction from civil court. Compensation for harassment available under tort law. Local tenant welfare associations provide support and legal aid.",
+    category: "Tenant Rights",
+    tags: ["harassment", "criminal intimidation", "injunction", "legal aid"],
+    isPublished: true,
+  },
+
+  // Cybercrime - 10 articles
+  {
+    id: 21,
+    title: "IT Act 2000 - Cyber Crime Legal Framework",
+    content: "Information Technology Act 2000 is primary legislation for cyber crimes in India. Section 43 deals with damage to computer systems, Section 66 with computer related offenses, Section 67 with pornography. Amendment 2008 added more offenses like cyber terrorism (66F), identity theft (66C). Penalties range from fines to imprisonment up to 3 years.",
+    category: "Cybercrime",
+    tags: ["IT Act 2000", "cyber crime", "computer offenses", "identity theft"],
+    isPublished: true,
+  },
+  {
+    id: 22,
+    title: "Online Fraud and Digital Payment Security",
+    content: "Online financial fraud covered under IT Act Section 66C,66D and IPC Section 420. UPI fraud, credit card cloning, phishing attacks are common. RBI guidelines mandate two-factor authentication. Banks liable for unauthorized transactions if reported within timeline. Cyber cell investigation and digital forensics help track fraudsters.",
+    category: "Cybercrime",
+    tags: ["online fraud", "UPI fraud", "phishing", "RBI guidelines", "cyber cell"],
+    isPublished: true,
+  },
+  {
+    id: 23,
+    title: "Cyberbullying and Online Harassment Laws",
+    content: "Cyberbullying covered under IT Act Section 67 (sending offensive messages) and IPC Section 354D (stalking). Online harassment of women specifically addressed under Section 354A IPC. Victim can report to cyber cell or local police. Social media platforms obligated to remove offensive content. Punishment includes imprisonment and fine.",
+    category: "Cybercrime",
+    tags: ["cyberbullying", "online harassment", "stalking", "social media"],
+    isPublished: true,
+  },
+  {
+    id: 24,
+    title: "Data Privacy Rights Under IT Rules 2011",
+    content: "IT (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules 2011 govern data protection. Personal data includes name, address, biometric info, financial details. Companies must obtain consent before collecting sensitive data. Data breach notification mandatory. Individual has right to access and correct personal data.",
+    category: "Cybercrime",
+    tags: ["data privacy", "IT rules 2011", "data protection", "consent"],
+    isPublished: true,
+  },
+  {
+    id: 25,
+    title: "Hacking and Unauthorized Access Prevention",
+    content: "Hacking covered under IT Act Section 66 (computer related offenses) and Section 43 (damage to computer systems). Unauthorized access to protected systems punishable with imprisonment up to 3 years. White hat hacking for security testing legal if authorized. Companies must implement reasonable security measures to prevent hacking attempts.",
+    category: "Cybercrime",
+    tags: ["hacking", "unauthorized access", "computer security", "white hat"],
+    isPublished: true,
+  },
+  {
+    id: 26,
+    title: "Digital Evidence and Cyber Forensics",
+    content: "Digital evidence admissible under Evidence Act Section 65B if accompanied by certificate. Chain of custody crucial for evidence validity. Cyber forensics experts analyze digital devices for evidence collection. Hash values ensure evidence integrity. Live forensics and dead forensics different techniques for investigation.",
+    category: "Cybercrime",
+    tags: ["digital evidence", "cyber forensics", "evidence act", "chain of custody"],
+    isPublished: true,
+  },
+  {
+    id: 27,
+    title: "Social Media Crimes and Platform Liability",
+    content: "Social media platforms have intermediary liability under IT Act Section 79. Safe harbor protection available if platforms follow due diligence. Fake profiles, morphed images, revenge porn are criminal offenses. Platforms must establish grievance mechanism. Users can report content for removal within prescribed timeframe.",
+    category: "Cybercrime",
+    tags: ["social media", "intermediary liability", "fake profiles", "revenge porn"],
+    isPublished: true,
+  },
+  {
+    id: 28,
+    title: "Cryptocurrency and Blockchain Legal Issues",
+    content: "Cryptocurrency regulations evolving in India. RBI restrictions on crypto transactions. Crypto assets subject to taxation under Income Tax Act. Blockchain technology legal for legitimate uses. Smart contracts legal validity under Indian Contract Act. Crypto crimes covered under IT Act and IPC provisions.",
+    category: "Cybercrime",
+    tags: ["cryptocurrency", "blockchain", "RBI regulations", "smart contracts"],
+    isPublished: true,
+  },
+  {
+    id: 29,
+    title: "Online Gaming and Betting Laws",
+    content: "Online gaming legality varies by state in India. Games of skill vs games of chance distinction important. Fantasy sports generally legal if skill-based. Online betting and gambling prohibited in most states. Foreign gaming platforms face regulatory scrutiny. Players must verify legality in their jurisdiction.",
+    category: "Cybercrime",
+    tags: ["online gaming", "betting laws", "fantasy sports", "skill vs chance"],
+    isPublished: true,
+  },
+  {
+    id: 30,
+    title: "E-commerce Consumer Rights and Disputes",
+    content: "E-commerce transactions governed by Consumer Protection Act 2019. Online marketplaces liable for defective products and deficient services. Consumer courts have jurisdiction over online disputes. Mandatory cooling-off period for online purchases. Dispute resolution mechanisms available through consumer forums and ombudsman.",
+    category: "Cybercrime",
+    tags: ["e-commerce", "consumer rights", "online disputes", "cooling-off period"],
+    isPublished: true,
+  },
+
+  // Women's Safety - 10 articles  
+  {
+    id: 31,
+    title: "Domestic Violence Act - Protection for Women",
+    content: "Protection of Women from Domestic Violence Act 2005 provides civil remedy against domestic violence. Covers physical, sexual, verbal, emotional and economic abuse. Woman can file complaint with Magistrate or Protection Officer. Interim and ex-parte relief available. Right to residence, maintenance, and custody of children protected.",
+    category: "Women's Safety",
+    tags: ["domestic violence", "protection act", "civil remedy", "maintenance"],
+    isPublished: true,
+  },
+  {
+    id: 32,
+    title: "Sexual Harassment at Workplace Laws",
+    content: "Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act 2013 mandates Internal Complaints Committee in every workplace. Employer liable for maintaining harassment-free environment. Victim can file complaint within 3 months. Inquiry must be completed within 90 days. False complaints also punishable.",
+    category: "Women's Safety",
+    tags: ["sexual harassment", "workplace", "ICC", "inquiry process"],
+    isPublished: true,
+  },
+  {
+    id: 33,
+    title: "Dowry Laws and Anti-Dowry Measures",
+    content: "Dowry Prohibition Act 1961 makes taking and giving dowry illegal. Section 498A IPC punishes cruelty by husband and in-laws. Dowry death covered under Section 304B IPC. Burden of proof on accused in dowry death cases. Dowry List maintenance mandatory. Women helpline 181 available for support.",
+    category: "Women's Safety",
+    tags: ["dowry prohibition", "section 498A", "dowry death", "women helpline"],
+    isPublished: true,
+  },
+  {
+    id: 34,
+    title: "Rape Laws and Sexual Assault Protection",
+    content: "Rape defined under IPC Section 375, punishment under Section 376. Criminal Law Amendment 2013 expanded definition and increased punishment. Marital rape partially recognized. Victim identity protection mandatory. In-camera trial and special procedures for recording statement. Compensation for rape victims under victim compensation scheme.",
+    category: "Women's Safety",
+    tags: ["rape laws", "sexual assault", "victim protection", "compensation"],
+    isPublished: true,
+  },
+  {
+    id: 35,
+    title: "Maternity Benefits and Workplace Rights",
+    content: "Maternity Benefit Act 1961 provides 26 weeks paid leave to women employees. Pre-natal and post-natal care benefits included. Employer cannot terminate pregnant woman's employment. Nursing breaks and creche facilities mandatory in establishments with 50+ women. Equal Remuneration Act prohibits gender-based wage discrimination.",
+    category: "Women's Safety",
+    tags: ["maternity benefits", "workplace rights", "nursing breaks", "equal pay"],
+    isPublished: true,
+  },
+  {
+    id: 36,
+    title: "Property Rights of Women",
+    content: "Hindu Succession Amendment Act 2005 gives equal inheritance rights to daughters. Muslim women have inheritance rights under Muslim Personal Law. Women can inherit, own and dispose property independently. Husband cannot sell wife's stridhan without consent. Joint property rights available to married women in many states.",
+    category: "Women's Safety",
+    tags: ["property rights", "inheritance", "stridhan", "joint property"],
+    isPublished: true,
+  },
+  {
+    id: 37,
+    title: "Protection Against Acid Attacks",
+    content: "IPC Section 326A specifically deals with acid attacks. Punishment includes imprisonment up to 10 years. Acid sale regulations under Drugs and Cosmetics Rules. Free treatment and rehabilitation for acid attack victims. Compensation scheme available through state governments. Special fast-track courts for speedy trial.",
+    category: "Women's Safety",
+    tags: ["acid attacks", "IPC 326A", "victim compensation", "fast-track courts"],
+    isPublished: true,
+  },
+  {
+    id: 38,
+    title: "Stalking and Eve-Teasing Laws",
+    content: "Stalking criminalized under IPC Section 354D with punishment up to 3 years. Eve-teasing covered under various IPC sections including 354, 509. Cyber stalking covered under IT Act. Victim can file FIR and seek police protection. Anti-Romeo squads formed in many states for women's safety in public places.",
+    category: "Women's Safety",
+    tags: ["stalking", "eve-teasing", "cyber stalking", "anti-romeo squads"],
+    isPublished: true,
+  },
+  {
+    id: 39,
+    title: "Women's Safety in Public Transport",
+    content: "Specific provisions for women's safety in public transport under various state laws. Reserved seats for women mandatory. Separate women's compartments in trains and buses. CCTV surveillance mandatory in public vehicles. Women can file complaints with transport authorities. Emergency helpline numbers displayed prominently.",
+    category: "Women's Safety",
+    tags: ["public transport", "reserved seats", "CCTV surveillance", "emergency helpline"],
+    isPublished: true,
+  },
+  {
+    id: 40,
+    title: "Legal Aid and Support Services for Women",
+    content: "Free legal aid available to women under Legal Services Authorities Act. National Commission for Women investigates women's rights violations. State Women Commissions provide redressal mechanisms. One Stop Centres provide integrated services. Women helpline 181 and emergency number 112 available 24x7.",
+    category: "Women's Safety",
+    tags: ["legal aid", "women commission", "one stop centres", "helpline 181"],
+    isPublished: true,
+  },
+
+  // Consumer Complaints - 10 articles
+  {
+    id: 41,
+    title: "Consumer Protection Act 2019 - Overview",
+    content: "Consumer Protection Act 2019 replaced earlier 1986 Act with enhanced consumer rights. Covers goods, services and digital transactions. Three-tier redressal mechanism: District, State and National Consumer Forums. E-commerce transactions specifically covered. Consumer defined to include online buyers. Penalties for misleading advertisements increased.",
+    category: "Consumer Complaints",
+    tags: ["consumer protection act", "consumer forums", "e-commerce", "misleading ads"],
+    isPublished: true,
+  },
+  {
+    id: 42,
+    title: "Deficiency in Service and Unfair Trade Practices",
+    content: "Deficiency in service includes lack of reasonable care and skill in performance. Unfair trade practices include false claims, deceptive practices, and manipulation of prices. Consumers can claim compensation for mental agony and litigation costs. Burden of proof on service provider to show no deficiency. Specific defences available to service providers.",
+    category: "Consumer Complaints",
+    tags: ["deficiency", "unfair practices", "compensation", "mental agony"],
+    isPublished: true,
+  },
+  {
+    id: 43,
+    title: "Product Liability and Manufacturer Responsibility",
+    content: "Product liability introduced under Consumer Protection Act 2019. Manufacturer, service provider and seller all liable for defective products. No-fault liability for harm caused by defective products. Compensation covers medical expenses, pain and suffering. Product recalls can be ordered. Class action suits allowed for widespread harm.",
+    category: "Consumer Complaints",
+    tags: ["product liability", "defective products", "no-fault liability", "class action"],
+    isPublished: true,
+  },
+  {
+    id: 44,
+    title: "E-commerce Consumer Rights",
+    content: "E-commerce platforms have specific obligations under Consumer Protection (E-Commerce) Rules 2020. Mandatory disclosure of total price, return policy, and grievance officer details. Consumers have right to return/exchange within specified period. Flash sales and misleading advertisements prohibited. Platform liability for seller actions in certain cases.",
+    category: "Consumer Complaints",
+    tags: ["e-commerce rules", "return policy", "flash sales", "platform liability"],
+    isPublished: true,
+  },
+  {
+    id: 45,
+    title: "Banking Services and Consumer Rights",
+    content: "Banking Ombudsman Scheme provides redressal for banking service deficiencies. Banks liable for unauthorized electronic transactions if reported timely. Consumers can approach Banking Ombudsman free of cost. Compensation available for mental agony caused by bank's negligence. RBI guidelines protect consumers against mis-selling of products.",
+    category: "Consumer Complaints",
+    tags: ["banking ombudsman", "electronic transactions", "mis-selling", "RBI guidelines"],
+    isPublished: true,
+  },
+  {
+    id: 46,
+    title: "Telecom Consumer Protection",
+    content: "Telecom Consumer Protection and Redressal of Grievances Regulations protect mobile and telecom consumers. TRAI handles consumer complaints against telecom operators. Unsolicited commercial communications (spam) prohibited. Consumers can port numbers freely. Compensation for call drops and service disruptions available through consumer forums.",
+    category: "Consumer Complaints",
+    tags: ["telecom protection", "TRAI", "spam", "number portability"],
+    isPublished: true,
+  },
+  {
+    id: 47,
+    title: "Insurance Consumer Grievances",
+    content: "Insurance Ombudsman provides free dispute resolution for insurance consumers. Insurers must settle claims within specified timelines. Unfair claim rejection practices can be challenged. IRDAI protects consumers from mis-selling of insurance products. Consumers can approach Ombudsman if insurer doesn't respond within 30 days.",
+    category: "Consumer Complaints",
+    tags: ["insurance ombudsman", "claim settlement", "IRDAI", "mis-selling"],
+    isPublished: true,
+  },
+  {
+    id: 48,
+    title: "Real Estate Consumer Protection",
+    content: "Real Estate Regulation and Development Act (RERA) 2016 protects home buyers. Developers must register projects with RERA authority. Buyers can file complaints for project delays, quality issues. Compensation available for delayed possession. Consumer forums have jurisdiction over real estate disputes not covered under RERA.",
+    category: "Consumer Complaints",
+    tags: ["RERA", "home buyers", "project delays", "delayed possession"],
+    isPublished: true,
+  },
+  {
+    id: 49,
+    title: "Healthcare Consumer Rights",
+    content: "Consumers have rights regarding healthcare services including right to information, consent, and quality treatment. Medical negligence can be challenged in consumer forums. Hospitals liable for deficient services and negligence of staff. Compensation covers medical expenses, loss of income, and mental agony. Clinical Establishment Acts regulate healthcare providers.",
+    category: "Consumer Complaints",
+    tags: ["healthcare rights", "medical negligence", "clinical establishment act", "treatment quality"],
+    isPublished: true,
+  },
+  {
+    id: 50,
+    title: "Consumer Complaint Filing Process",
+    content: "Consumer complaints can be filed online through EDAAKHIL portal or physically at consumer forums. Complaint must be filed within 2 years of cause of action. No court fee for complaints up to Rs. 5 lakhs. Complaint should include details of deficiency, damages claimed, and relief sought. Documents like bills, agreements must be attached as evidence.",
+    category: "Consumer Complaints",
+    tags: ["filing process", "EDAAKHIL portal", "time limitation", "documentation"],
+    isPublished: true,
+  },
+];
+
+export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+  // Handle CORS for production
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Content-Type": "application/json",
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers,
+      body: "",
+    };
+  }
+
+  try {
+    const method = event.httpMethod;
+    
+    console.log("Knowledge endpoint called:", { path: event.path, method, queryString: event.queryStringParameters });
+    
+    if (method === "GET") {
+      // Check if specific article ID is requested via query parameter
+      const articleId = event.queryStringParameters?.id;
+      if (articleId) {
+        const id = parseInt(articleId);
+        const article = knowledgeArticles.find(a => a.id === id);
+        if (article) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(article),
+          };
+        } else {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: "Article not found" }),
+          };
+        }
+      }
+      
+      // Return all knowledge base articles
+      console.log("Returning articles count:", knowledgeArticles.length);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(knowledgeArticles),
+      };
+    }
+    
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+    
+  } catch (error) {
+    console.error("Knowledge function error:", error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: "Internal server error", details: error.message }),
+    };
+  }
+};
