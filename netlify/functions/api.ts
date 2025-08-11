@@ -23,8 +23,9 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     const path = event.path.replace("/.netlify/functions/api", "");
     const method = event.httpMethod;
     
-    // Mock API responses for static deployment
-    // In a real deployment, you would connect to your database here
+    console.log("Received request:", { path: event.path, cleanPath: path, method });
+    
+    // API responses with real data for static deployment
     
     if (path.startsWith("/chat") && method === "POST") {
       // AI chat response
@@ -39,33 +40,37 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       };
     }
     
-    if (path.startsWith("/knowledge") && method === "GET") {
-      // Check if specific article ID is requested
-      const pathParts = path.split('/');
-      if (pathParts.length > 2 && pathParts[2]) {
-        const articleId = parseInt(pathParts[2]);
-        const article = knowledgeArticles.find(a => a.id === articleId);
-        if (article) {
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(article),
-          };
-        } else {
-          return {
-            statusCode: 404,
-            headers,
-            body: JSON.stringify({ error: "Article not found" }),
-          };
+    // Handle knowledge base requests
+    if (path === "/knowledge" || path.startsWith("/knowledge")) {
+      if (method === "GET") {
+        // Check if specific article ID is requested
+        const pathParts = path.split('/');
+        if (pathParts.length > 2 && pathParts[2]) {
+          const articleId = parseInt(pathParts[2]);
+          const article = knowledgeArticles.find(a => a.id === articleId);
+          if (article) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify(article),
+            };
+          } else {
+            return {
+              statusCode: 404,
+              headers,
+              body: JSON.stringify({ error: "Article not found" }),
+            };
+          }
         }
+        
+        // Return all knowledge base articles
+        console.log("Returning articles count:", knowledgeArticles.length);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(knowledgeArticles),
+        };
       }
-      
-      // Return all knowledge base articles
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(knowledgeArticles),
-      };
     }
     
     if (path.startsWith("/consultations") && method === "POST") {
@@ -95,10 +100,17 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     }
 
     // Default response for unmatched routes
+    console.log("No route matched for:", { path: event.path, cleanPath: path, method });
     return {
       statusCode: 404,
       headers,
-      body: JSON.stringify({ error: "API endpoint not found" }),
+      body: JSON.stringify({ 
+        error: "API endpoint not found", 
+        requestedPath: event.path,
+        cleanPath: path,
+        method: method,
+        availableEndpoints: ["/knowledge", "/chat", "/consultations", "/feedback"]
+      }),
     };
     
   } catch (error) {
